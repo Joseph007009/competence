@@ -161,7 +161,6 @@ body::before {
         radial-gradient(circle at 80% 70%, rgba(131, 56, 236, 0.05) 0%, transparent 35%);
     pointer-events: none;
     z-index: 0;
-    animation: gradientFlow 8s ease-in-out infinite;
 }
 
 body.dark-theme {
@@ -199,8 +198,12 @@ body.dark-theme {
     width: 200%;
     height: 200%;
     background: radial-gradient(circle, rgba(0, 217, 255, 0.1) 0%, transparent 70%);
-    animation: float 8s ease-in-out infinite;
     pointer-events: none;
+    will-change: transform;
+}
+
+.hero:hover::before {
+    animation: float 8s ease-in-out infinite;
 }
 
 .hero::after {
@@ -211,8 +214,11 @@ body.dark-theme {
     right: 0;
     bottom: 0;
     background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.03), transparent);
-    animation: shimmer 3s infinite;
     pointer-events: none;
+}
+
+.hero:hover::after {
+    animation: shimmer 3s infinite;
 }
 
 .hero > * {
@@ -260,6 +266,7 @@ h1 {
     animation: slideUp 0.6s ease forwards;
     position: relative;
     overflow: hidden;
+    contain: layout style;
 }
 
 .stat:nth-child(1) { animation-delay: 0.1s; }
@@ -543,6 +550,8 @@ textarea {
     cursor: pointer;
     position: relative;
     overflow: hidden;
+    will-change: transform;
+    contain: layout style;
 }
 
 .skill::before {
@@ -925,5 +934,20 @@ canvas {
 
     #matrixRadarLevel {
         height: 300px;
+    }
+}
+
+.show-more-btn {
+    width: 100%;
+    margin-top: 8px;
+    text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
     }
 }
