@@ -21,6 +21,11 @@ const dom = {
     skillNote: null,
     resetProgress: null,
     seedDemo: null,
+    exportJSON: null,
+    importJSON: null,
+    skillSearch: null,
+    filterCategory: null,
+    filterStatus: null,
     todoList: null,
     doneList: null,
     skillsMatrixBody: null,
@@ -40,6 +45,9 @@ let matrixRadarModel = [];
 let matrixLevelHoverIndex = -1;
 let matrixRadarLevelModel = [];
 let animationFrameIds = {};
+let searchQuery = "";
+let filterCategory = "";
+let filterStatus = "";
 
 function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -135,12 +143,18 @@ function getStatsAndBuckets() {
     const todoItems = [];
     const doneItems = [];
 
+    const q = searchQuery.toLowerCase();
+
     for (const skill of state.skills) {
+        const matchesSearch = !q || skill.name.toLowerCase().includes(q) || skill.category.toLowerCase().includes(q) || (skill.note && skill.note.toLowerCase().includes(q));
+        const matchesCat = !filterCategory || skill.category === filterCategory;
+        const matchesStatus = !filterStatus || skill.status === filterStatus;
+
         if (skill.status === "done") {
             done += 1;
-            doneItems.push(skill);
+            if (matchesSearch && matchesCat && matchesStatus) doneItems.push(skill);
         } else {
-            todoItems.push(skill);
+            if (matchesSearch && matchesCat && matchesStatus) todoItems.push(skill);
         }
     }
 
@@ -542,9 +556,87 @@ function escapeHTML(value) {
 function render() {
     const stats = getStatsAndBuckets();
     renderStats(stats);
+    populateFilterCategories();
     renderLists(stats);
     renderMatrix();
     queueChartDraw();
+}
+
+function populateFilterCategories() {
+    const categories = [...new Set(state.skills.map((s) => s.category))].sort();
+    const current = dom.filterCategory.value;
+    dom.filterCategory.innerHTML = '<option value="">Toutes les categories</option>';
+    for (const cat of categories) {
+        const opt = document.createElement("option");
+        opt.value = cat;
+        opt.textContent = cat;
+        if (cat === current) opt.selected = true;
+        dom.filterCategory.appendChild(opt);
+    }
+}
+
+function exportSkillsJSON() {
+    const data = {
+        exportedAt: new Date().toISOString(),
+        version: "1",
+        skills: state.skills,
+        history: state.history
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `skillflow-export-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importSkillsJSON(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            const skills = Array.isArray(data.skills) ? data.skills : (Array.isArray(data) ? data : null);
+            if (!skills) {
+                alert("Format JSON invalide : aucun tableau de competences trouve.");
+                return;
+            }
+            if (!confirm(`Importer ${skills.length} competence(s) ? Les doublons (meme nom + categorie) seront ignores.`)) return;
+
+            const existingKeys = new Set(state.skills.map((s) => `${s.name}|${s.category}`));
+            let added = 0;
+            for (const skill of skills) {
+                if (!skill.name || !skill.category || !skill.level) continue;
+                const key = `${skill.name}|${skill.category}`;
+                if (existingKeys.has(key)) continue;
+                existingKeys.add(key);
+                state.skills.push({
+                    id: uid(),
+                    name: skill.name,
+                    category: skill.category,
+                    level: skill.level,
+                    note: skill.note || "",
+                    status: skill.status === "done" ? "done" : "todo",
+                    createdAt: skill.createdAt || new Date().toISOString(),
+                    completedAt: skill.completedAt || null
+                });
+                added++;
+            }
+
+            if (added > 0) {
+                recordSnapshot();
+                render();
+                alert(`${added} competence(s) importee(s) avec succes.`);
+            } else {
+                alert("Aucune nouvelle competence a importer (doublons ou donnees vides).");
+            }
+        } catch {
+            alert("Erreur de lecture du fichier JSON.");
+        }
+    };
+    reader.readAsText(file);
+    dom.importJSON.value = "";
 }
 
 function onSubmitSkillForm(event) {
@@ -609,8 +701,13 @@ function onResetProgress() {
 function onAddDemo() {
     const demoSkills = [
         { name: "Maitriser les bases HTML/CSS", category: "Web", level: "Debutant", note: "Construire 3 pages responsive" },
-        { name: "Faire une API REST", category: "Programmation", level: "Intermediaire", note: "Node ou Python" },
-        { name: "Analyser un trafic reseau", category: "Reseau", level: "Intermediaire", note: "Wireshark" }
+        { name: "Faire une API REST", category: "API", level: "Intermediaire", note: "Node ou Python Flask" },
+        { name: "Analyser un trafic reseau", category: "Reseau", level: "Intermediaire", note: "Wireshark + tcpdump" },
+        { name: "Scanner de ports avec Nmap", category: "Pentest", level: "Debutant", note: "Apprendre les flags courants" },
+        { name: "Entrainer un modele ML", category: "IA / ML", level: "Avance", note: "scikit-learn ou PyTorch" },
+        { name: "Automatiser avec Python", category: "Automatisation", level: "Intermediaire", note: "Scripts cron + API" },
+        { name: "Deployer avec Docker", category: "DevOps", level: "Intermediaire", note: "Dockerfile + docker-compose" },
+        { name: "OSINT reconnaissance passive", category: "OSINT", level: "Intermediaire", note: "Shodan, Maltego, recon-ng" }
     ];
 
     addSkillsBatch(demoSkills);
@@ -720,6 +817,11 @@ function cacheDom() {
     dom.skillNote = document.getElementById("skillNote");
     dom.resetProgress = document.getElementById("resetProgress");
     dom.seedDemo = document.getElementById("seedDemo");
+    dom.exportJSON = document.getElementById("exportJSON");
+    dom.importJSON = document.getElementById("importJSON");
+    dom.skillSearch = document.getElementById("skillSearch");
+    dom.filterCategory = document.getElementById("filterCategory");
+    dom.filterStatus = document.getElementById("filterStatus");
     dom.todoList = document.getElementById("todoList");
     dom.doneList = document.getElementById("doneList");
     dom.skillsMatrixBody = document.getElementById("skillsMatrixBody");
@@ -738,7 +840,29 @@ function bindEvents() {
     dom.resetProgress.addEventListener("click", onResetProgress);
     dom.seedDemo.addEventListener("click", onAddDemo);
     dom.themeToggle.addEventListener("click", toggleTheme);
-    
+    dom.exportJSON.addEventListener("click", exportSkillsJSON);
+    dom.importJSON.addEventListener("change", (e) => importSkillsJSON(e.target.files[0]));
+
+    // Search and filter
+    let searchDebounce = null;
+    dom.skillSearch.addEventListener("input", (e) => {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            searchQuery = e.target.value.trim();
+            render();
+        }, 200);
+    });
+
+    dom.filterCategory.addEventListener("change", (e) => {
+        filterCategory = e.target.value;
+        render();
+    });
+
+    dom.filterStatus.addEventListener("change", (e) => {
+        filterStatus = e.target.value;
+        render();
+    });
+
     // Form validation feedback
     dom.skillName.addEventListener("input", (e) => {
         if (e.target.value.trim()) {

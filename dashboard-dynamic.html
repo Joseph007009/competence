@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkillFlow - Tracker de competences</title>
     <link rel="stylesheet" href="dashboard-dynamic.css">
+    <meta name="description" content="SkillFlow - Tracker de compétences en cybersécurité, IA, automatisation et informatique">
 </head>
 <body>
     <main class="container">
@@ -33,12 +34,36 @@
                         <input id="skillName" type="text" placeholder="Nom de la competence" required>
                         <select id="skillCategory" required>
                             <option value="">Categorie</option>
-                            <option>Web</option>
-                            <option>Programmation</option>
-                            <option>Reseau</option>
-                            <option>Securite</option>
-                            <option>Data</option>
-                            <option>Autre</option>
+                            <optgroup label="Securite">
+                                <option>Cybersecurite</option>
+                                <option>Pentest</option>
+                                <option>OSINT</option>
+                                <option>Cryptographie</option>
+                                <option>Forensic</option>
+                                <option>CTF</option>
+                            </optgroup>
+                            <optgroup label="IA et Data">
+                                <option>IA / ML</option>
+                                <option>Data</option>
+                                <option>Traitement NLP</option>
+                            </optgroup>
+                            <optgroup label="Developpement">
+                                <option>Web</option>
+                                <option>Programmation</option>
+                                <option>Scripting</option>
+                                <option>API</option>
+                            </optgroup>
+                            <optgroup label="Infra et Ops">
+                                <option>Automatisation</option>
+                                <option>DevOps</option>
+                                <option>Cloud</option>
+                                <option>Linux / Systemes</option>
+                                <option>Reseau</option>
+                                <option>Virtualisation</option>
+                            </optgroup>
+                            <optgroup label="Autre">
+                                <option>Autre</option>
+                            </optgroup>
                         </select>
                         <select id="skillLevel" required>
                             <option value="">Niveau cible</option>
@@ -55,11 +80,27 @@
                 <div class="toolbar">
                     <button id="resetProgress" class="btn warn" type="button">Reinitialiser progression</button>
                     <button id="seedDemo" class="btn ghost" type="button">Ajouter exemple</button>
+                    <button id="exportJSON" class="btn ghost" type="button" title="Exporter les competences en JSON pour automatisation">Exporter JSON</button>
+                    <label class="btn ghost" style="cursor:pointer;" title="Importer des competences depuis un fichier JSON">
+                        Importer JSON
+                        <input id="importJSON" type="file" accept=".json,application/json" style="display:none;">
+                    </label>
                 </div>
             </aside>
 
             <section class="panel">
                 <h2>Liste des competences</h2>
+                <div class="search-bar">
+                    <input id="skillSearch" type="search" placeholder="Rechercher une competence..." autocomplete="off" aria-label="Rechercher une competence">
+                    <select id="filterCategory" aria-label="Filtrer par categorie">
+                        <option value="">Toutes les categories</option>
+                    </select>
+                    <select id="filterStatus" aria-label="Filtrer par statut">
+                        <option value="">Tous les statuts</option>
+                        <option value="todo">A obtenir</option>
+                        <option value="done">Obtenues</option>
+                    </select>
+                </div>
                 <div class="split">
                     <div>
                         <div class="label">Competences a obtenir</div>
