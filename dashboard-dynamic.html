@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillFlow - Tracker de competences</title>
+    <link rel="stylesheet" href="dashboard-dynamic.css">
+</head>
+<body>
+    <main class="container">
+        <section class="hero">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h1>SkillFlow - Suivi complet de competences</h1>
+                <button id="themeToggle" class="btn ghost" style="width: auto; padding: 8px 12px; font-size: 1.2rem;" title="Changer le theme">🌙</button>
+            </div>
+            <p class="subtitle">
+                Ajoute les competences que tu veux obtenir, valide celles que tu as acquises,
+                et visualise ta matrice de competences en mode circulaire.
+            </p>
+            <div class="stats">
+                <div class="stat"><strong id="totalSkills">0</strong><span>Competences totales</span></div>
+                <div class="stat"><strong id="todoSkills">0</strong><span>A obtenir</span></div>
+                <div class="stat"><strong id="doneSkills">0</strong><span>Obtenues</span></div>
+                <div class="stat"><strong id="progressPercent">0%</strong><span>Progression globale</span></div>
+            </div>
+        </section>
+
+        <section class="layout">
+            <aside class="panel">
+                <h2>Ajouter une competence</h2>
+                <form id="skillForm">
+                    <div class="form-row">
+                        <input id="skillName" type="text" placeholder="Nom de la competence" required>
+                        <select id="skillCategory" required>
+                            <option value="">Categorie</option>
+                            <option>Web</option>
+                            <option>Programmation</option>
+                            <option>Reseau</option>
+                            <option>Securite</option>
+                            <option>Data</option>
+                            <option>Autre</option>
+                        </select>
+                        <select id="skillLevel" required>
+                            <option value="">Niveau cible</option>
+                            <option>Debutant</option>
+                            <option>Intermediaire</option>
+                            <option>Avance</option>
+                            <option>Expert</option>
+                        </select>
+                        <textarea id="skillNote" placeholder="Note (optionnel): objectif, ressource, deadline..."></textarea>
+                        <button class="btn primary" type="submit">Ajouter la competence</button>
+                    </div>
+                </form>
+
+                <div class="toolbar">
+                    <button id="resetProgress" class="btn warn" type="button">Reinitialiser progression</button>
+                    <button id="seedDemo" class="btn ghost" type="button">Ajouter exemple</button>
+                </div>
+            </aside>
+
+            <section class="panel">
+                <h2>Liste des competences</h2>
+                <div class="split">
+                    <div>
+                        <div class="label">Competences a obtenir</div>
+                        <div id="todoList" class="cards"></div>
+                    </div>
+                    <div>
+                        <div class="label">Competences obtenues</div>
+                        <div id="doneList" class="cards"></div>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <section class="panel matrix-panel">
+            <h2>Skills Matrix</h2>
+            <div class="matrix-radars">
+                <div class="chart-wrap matrix-circle-wrap">
+                    <div class="label">Skills Matrix (radar par categorie)</div>
+                    <canvas id="matrixRadar" width="900" height="360"></canvas>
+                    <div class="matrix-legend" id="matrixLegend"></div>
+                    <div class="matrix-hover" id="matrixHover">Survole un point du radar pour voir les details.</div>
+                </div>
+                <div class="chart-wrap matrix-circle-wrap">
+                    <div class="label">Skills Matrix (radar par niveau cible)</div>
+                    <canvas id="matrixRadarLevel" width="900" height="360"></canvas>
+                    <div class="matrix-legend" id="matrixLegendLevel"></div>
+                    <div class="matrix-hover" id="matrixHoverLevel">Survole un point du radar pour voir les details.</div>
+                </div>
+            </div>
+            <div class="matrix-wrap">
+                <table class="matrix-table" id="skillsMatrix">
+                    <thead>
+                        <tr>
+                            <th>Competence</th>
+                            <th>Categorie</th>
+                            <th>Niveau cible</th>
+                            <th>Statut</th>
+                            <th>Creee le</th>
+                            <th>Validee le</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody id="skillsMatrixBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    <script src="dashboard-dynamic.js" defer></script>
+</body>
+</html>
