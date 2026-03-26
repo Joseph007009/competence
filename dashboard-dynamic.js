@@ -40,6 +40,11 @@ let matrixRadarModel = [];
 let matrixLevelHoverIndex = -1;
 let matrixRadarLevelModel = [];
 let animationFrameIds = {};
+let saveDebounceId = null;
+let lastRadarMoveTime = 0;
+let lastRadarLevelMoveTime = 0;
+const CANVAS_THROTTLE_MS = 100;
+const SAVE_DEBOUNCE_MS = 2000;
 
 function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -111,8 +116,11 @@ function toggleTheme() {
 }
 
 function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.skills));
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history));
+    clearTimeout(saveDebounceId);
+    saveDebounceId = setTimeout(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.skills));
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history));
+    }, SAVE_DEBOUNCE_MS);
 }
 
 function loadState() {
@@ -245,14 +253,30 @@ function cardHTML(skill, inDoneColumn) {
     `;
 }
 
-function renderLists(stats) {
-    dom.todoList.innerHTML = stats.todoItems.length
-        ? stats.todoItems.map((skill) => cardHTML(skill, false)).join("")
-        : '<div class="empty">Aucune competence en attente.</div>';
+const LIST_PAGE_SIZE = 15;
 
-    dom.doneList.innerHTML = stats.doneItems.length
-        ? stats.doneItems.map((skill) => cardHTML(skill, true)).join("")
-        : '<div class="empty">Aucune competence validee pour le moment.</div>';
+function renderListColumn(container, items, inDone) {
+    if (!items.length) {
+        container.innerHTML = inDone
+            ? '<div class="empty">Aucune competence validee pour le moment.</div>'
+            : '<div class="empty">Aucune competence en attente.</div>';
+        return;
+    }
+
+    const visible = items.slice(0, LIST_PAGE_SIZE);
+    let html = visible.map((skill) => cardHTML(skill, inDone)).join("");
+
+    if (items.length > LIST_PAGE_SIZE) {
+        const remaining = items.length - LIST_PAGE_SIZE;
+        html += `<button class="btn ghost show-more-btn" data-action="show-more" data-column="${inDone ? 'done' : 'todo'}">+${remaining} de plus</button>`;
+    }
+
+    container.innerHTML = html;
+}
+
+function renderLists(stats) {
+    renderListColumn(dom.todoList, stats.todoItems, false);
+    renderListColumn(dom.doneList, stats.doneItems, true);
 }
 
 function renderMatrix() {
@@ -590,6 +614,17 @@ function onBodyClick(event) {
 
     const action = target.dataset.action;
     const skillId = target.dataset.id;
+
+    if (action === "show-more") {
+        const column = target.dataset.column;
+        const stats = getStatsAndBuckets();
+        const items = column === "done" ? stats.doneItems : stats.todoItems;
+        const container = column === "done" ? dom.doneList : dom.todoList;
+        const inDone = column === "done";
+        container.innerHTML = items.map((skill) => cardHTML(skill, inDone)).join("");
+        return;
+    }
+
     if (!action || !skillId) return;
 
     if (action === "done") setSkillStatus(skillId, true);
@@ -628,6 +663,10 @@ function onResize() {
 
 function onMatrixRadarMove(event) {
     if (!matrixRadarModel.length) return;
+
+    const now = Date.now();
+    if (now - lastRadarMoveTime < CANVAS_THROTTLE_MS) return;
+    lastRadarMoveTime = now;
 
     const rect = dom.matrixRadar.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -669,6 +708,10 @@ function onMatrixRadarLeave() {
 
 function onMatrixRadarLevelMove(event) {
     if (!matrixRadarLevelModel.length) return;
+
+    const now = Date.now();
+    if (now - lastRadarLevelMoveTime < CANVAS_THROTTLE_MS) return;
+    lastRadarLevelMoveTime = now;
 
     const rect = dom.matrixRadarLevel.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -739,6 +782,14 @@ function bindEvents() {
     dom.seedDemo.addEventListener("click", onAddDemo);
     dom.themeToggle.addEventListener("click", toggleTheme);
     
+    window.addEventListener("beforeunload", () => {
+        if (saveDebounceId !== null) {
+            clearTimeout(saveDebounceId);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state.skills));
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history));
+        }
+    });
+
     // Form validation feedback
     dom.skillName.addEventListener("input", (e) => {
         if (e.target.value.trim()) {
